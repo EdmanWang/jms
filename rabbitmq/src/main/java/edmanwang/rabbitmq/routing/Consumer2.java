@@ -1,45 +1,44 @@
-package edmanwang.rabbitmq.fair_dispatch;
+package edmanwang.rabbitmq.routing;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.sun.org.apache.bcel.internal.generic.FADD;
 import edmanwang.rabbitmq.util.ConnectionUtil;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public class Receive1 {
+public class Consumer2 {
 
-    private static final String QUEUE_NAME = "fair_dispatch_queue";
+    private static final String EXECHANGE_NAME = "test_exechange_routing_name";
+
+    private static final String ROUNTING_QUEUE_TWO_NAME = "rounting_queue_two_name";
 
     public static void main(String[] args) throws IOException, TimeoutException {
         Connection connection = ConnectionUtil.getConnection();
 
         final Channel channel = connection.createChannel();
 
-        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+        channel.queueDeclare(ROUNTING_QUEUE_TWO_NAME, false, false, false, null);
 
-        channel.basicQos(1);
+        channel.queueBind(ROUNTING_QUEUE_TWO_NAME, EXECHANGE_NAME, "info");
+        channel.queueBind(ROUNTING_QUEUE_TWO_NAME, EXECHANGE_NAME, "error");
+        channel.queueBind(ROUNTING_QUEUE_TWO_NAME, EXECHANGE_NAME, "warn");
 
         DefaultConsumer consumer = new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-                String msg = new String(body, "utf-8");
-                System.out.println("[1] receive msgs ---->" + msg);
-
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    System.out.println("[1] handle msgs finish");
-                    channel.basicAck(envelope.getDeliveryTag(), false);
+                    System.out.println("consumer 【2】 reveice value ---->" + new String(body));
+                }finally {
+                    channel.basicAck(envelope.getDeliveryTag(),false);
                 }
             }
         };
-        channel.basicConsume(QUEUE_NAME, consumer);
+
+        channel.basicConsume(ROUNTING_QUEUE_TWO_NAME, consumer);
+
     }
 }

@@ -1,45 +1,42 @@
-package edmanwang.rabbitmq.fair_dispatch;
+package edmanwang.rabbitmq.topic;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.sun.org.apache.bcel.internal.generic.FADD;
 import edmanwang.rabbitmq.util.ConnectionUtil;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-public class Receive1 {
+public class TopicConsumer1 {
 
-    private static final String QUEUE_NAME = "fair_dispatch_queue";
+    private static final String TEST_EXCHANGE_TOPIC_NAME = "test_exchange_topic_name";
+
+    private static final String TOPIC_GOODS_UPDATE_QUEUE_NAME = "topic_goods_update_queue_name";
 
     public static void main(String[] args) throws IOException, TimeoutException {
         Connection connection = ConnectionUtil.getConnection();
 
         final Channel channel = connection.createChannel();
 
-        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+        channel.queueDeclare(TOPIC_GOODS_UPDATE_QUEUE_NAME, false, false, false, null);
 
-        channel.basicQos(1);
+        channel.queueBind(TOPIC_GOODS_UPDATE_QUEUE_NAME, TEST_EXCHANGE_TOPIC_NAME, "goods.update");
 
         DefaultConsumer consumer = new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-                String msg = new String(body, "utf-8");
-                System.out.println("[1] receive msgs ---->" + msg);
-
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    String message = new String(body, "utf-8");
+                    System.out.println("consumer [1] receive message ----> " + message);
                 } finally {
-                    System.out.println("[1] handle msgs finish");
                     channel.basicAck(envelope.getDeliveryTag(), false);
                 }
             }
         };
-        channel.basicConsume(QUEUE_NAME, consumer);
+
+        channel.basicConsume(TOPIC_GOODS_UPDATE_QUEUE_NAME, consumer);
     }
 }
